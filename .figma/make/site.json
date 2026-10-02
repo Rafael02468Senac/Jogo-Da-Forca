@@ -1,0 +1,10 @@
+{
+  "description": "Engage in an interactive hangman game that tracks guesses, displays progress visually, and enforces game rules for an enjoyable word-guessing challenge.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
