@@ -4,53 +4,65 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 
 const WORDS_FREE = [
   'FILA', 'GRAFO', 'PILHA', 'VETOR', 'ARRAY', 'REDE', 'FORCA',
-  'CLASSE', 'OBJETO', 'MODULO', 'MATRIZ', 'CURSOR', 'ARVORE',
-  'METODO', 'FUNCAO', 'TECLADO', 'MONITOR', 'SISTEMA', 'CLIENTE',
+  'CLASSE', 'OBJETO', 'MÓDULO', 'MATRIZ', 'CURSOR', 'ÁRVORE',
+  'MÉTODO', 'FUNÇÃO', 'TECLADO', 'MONITOR', 'SISTEMA', 'CLIENTE',
   'PROGRAMA', 'SOFTWARE', 'HARDWARE', 'TERMINAL', 'DEPURADOR',
-  'RECURSAO', 'ITERACAO', 'PONTEIRO', 'BINARIO', 'DECIMAL',
-  'DIGITAL', 'DADOS', 'CODIGO', 'PACOTE', 'SERVIDOR',
-  'ALGORITMO', 'VARIAVEL', 'COMPONENTE', 'INTERFACE', 'LINGUAGEM',
+  'RECURSÃO', 'ITERAÇÃO', 'PONTEIRO', 'BINÁRIO', 'DECIMAL',
+  'DIGITAL', 'DADOS', 'CÓDIGO', 'PACOTE', 'SERVIDOR',
+  'ALGORITMO', 'VARIÁVEL', 'COMPONENTE', 'INTERFACE', 'LINGUAGEM',
   'NAVEGADOR', 'BIBLIOTECA', 'FRAMEWORK', 'TECNOLOGIA', 'COMPILADOR',
-  'PROTOCOLO', 'JAVASCRIPT', 'PROGRAMACAO', 'HEXADECIMAL',
-  'COMPUTADOR', 'AUTENTICACAO', 'CRIPTOGRAFIA',
-  'DESENVOLVEDOR', 'IMPLEMENTACAO', 'SINCRONIZACAO', 'PROCESSAMENTO',
+  'PROTOCOLO', 'JAVASCRIPT', 'PROGRAMAÇÃO', 'HEXADECIMAL',
+  'COMPUTADOR', 'AUTENTICAÇÃO', 'CRIPTOGRAFIA', 'CÓDIGO-FONTE',
+  'DESENVOLVEDOR', 'IMPLEMENTAÇÃO', 'SINCRONIZAÇÃO', 'PROCESSAMENTO',
   'ARMAZENAMENTO', 'INTERPRETADOR', 'INFRAESTRUTURA', 'ENCAPSULAMENTO',
-  'DESENVOLVIMENTO',
+  'DESENVOLVIMENTO', 'PARÂMETRO', 'SEQUÊNCIA', 'MEMÓRIA', 'CONEXÃO',
+  'ACESSO À REDE',
 ]
 
 const BODY_PARTS = [
   { id:  1, name: 'Cabeça' },
   { id:  2, name: 'Corpo' },
-  { id:  3, name: 'Braço esquerdo' },
-  { id:  4, name: 'Braço direito' },
-  { id:  5, name: 'Perna esquerda' },
-  { id:  6, name: 'Perna direita' },
+  { id:  3, name: 'Braço e mão esquerda' },
+  { id:  4, name: 'Braço e mão direita' },
+  { id:  5, name: 'Perna e pé esquerdo' },
+  { id:  6, name: 'Perna e pé direito' },
   { id:  7, name: 'Cabelo' },
-  { id:  8, name: 'Orelha esquerda' },
-  { id:  9, name: 'Olho esquerdo' },
-  { id: 10, name: 'Orelha direita' },
-  { id: 11, name: 'Olho direito' },
-  { id: 12, name: 'Sobrancelha esq.' },
-  { id: 13, name: 'Sobrancelha dir.' },
-  { id: 14, name: 'Nariz' },
-  { id: 15, name: 'Boca' },
-  { id: 16, name: 'Mão esquerda' },
-  { id: 17, name: 'Mão direita' },
-  { id: 18, name: 'Pé esquerdo' },
-  { id: 19, name: 'Pé direito' },
+  { id:  8, name: 'Sobrancelhas' },
+  { id:  9, name: 'Olhos' },
+  { id: 10, name: 'Orelhas' },
+  { id: 11, name: 'Nariz' },
+  { id: 12, name: 'Boca' },
 ]
 
 const KEYBOARD_ROWS = [
   ['Q','W','E','R','T','Y','U','I','O','P'],
-  ['A','S','D','F','G','H','J','K','L'],
+  ['A','S','D','F','G','H','J','K','L','Ç'],
   ['Z','X','C','V','B','N','M'],
 ]
 
 const MIN_ERRORS = 6
-const MAX_ERRORS_CAP = 19
+const MAX_ERRORS_CAP = 12
 
 function pickRandom(pool: string[]): string {
   return pool[Math.floor(Math.random() * pool.length)]
+}
+
+function getGuessKey(character: string): string {
+  const upper = character.toUpperCase()
+  if (upper === 'Ç') return upper
+  return upper.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+}
+
+function isGuessableCharacter(character: string): boolean {
+  return /^[A-ZÀ-ÜÇ]$/.test(character)
+}
+
+function getWordGuessKeys(word: string): Set<string> {
+  return new Set(
+    [...word]
+      .filter(isGuessableCharacter)
+      .map(getGuessKey),
+  )
 }
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
@@ -64,7 +76,7 @@ function GearIcon() {
   )
 }
 
-// ─── Hangman (19 parts) ───────────────────────────────────────────────────────
+// ─── Hangman (12 stages) ──────────────────────────────────────────────────────
 
 function HangmanDrawing({ errors, small = false }: { errors: number; small?: boolean }) {
   const show = (n: number) => errors >= n
@@ -87,14 +99,30 @@ function HangmanDrawing({ errors, small = false }: { errors: number; small?: boo
       {show(1)  && <circle cx="160" cy="64" r="20" stroke={s} strokeWidth="3" fill="none" className="part-appear"/>}
       {/* 2 — Corpo */}
       {show(2)  && <line x1="160" y1="84" x2="160" y2="152" stroke={s} strokeWidth="3" strokeLinecap="round" className="part-appear"/>}
-      {/* 3 — Braço esquerdo */}
-      {show(3)  && <line x1="160" y1="100" x2="124" y2="132" stroke={s} strokeWidth="3" strokeLinecap="round" className="part-appear"/>}
-      {/* 4 — Braço direito */}
-      {show(4)  && <line x1="160" y1="100" x2="196" y2="132" stroke={s} strokeWidth="3" strokeLinecap="round" className="part-appear"/>}
-      {/* 5 — Perna esquerda */}
-      {show(5)  && <line x1="160" y1="152" x2="124" y2="198" stroke={s} strokeWidth="3" strokeLinecap="round" className="part-appear"/>}
-      {/* 6 — Perna direita */}
-      {show(6)  && <line x1="160" y1="152" x2="196" y2="198" stroke={s} strokeWidth="3" strokeLinecap="round" className="part-appear"/>}
+      {/* 3 — Braço e mão esquerda */}
+      {show(3)  && <>
+        <line x1="160" y1="100" x2="124" y2="132" stroke={s} strokeWidth="3" strokeLinecap="round" className="part-appear"/>
+        <line x1="124" y1="132" x2="114" y2="124" stroke={s} strokeWidth="2" strokeLinecap="round" className="part-appear"/>
+        <line x1="124" y1="132" x2="112" y2="132" stroke={s} strokeWidth="2" strokeLinecap="round" className="part-appear"/>
+        <line x1="124" y1="132" x2="114" y2="140" stroke={s} strokeWidth="2" strokeLinecap="round" className="part-appear"/>
+      </>}
+      {/* 4 — Braço e mão direita */}
+      {show(4)  && <>
+        <line x1="160" y1="100" x2="196" y2="132" stroke={s} strokeWidth="3" strokeLinecap="round" className="part-appear"/>
+        <line x1="196" y1="132" x2="206" y2="124" stroke={s} strokeWidth="2" strokeLinecap="round" className="part-appear"/>
+        <line x1="196" y1="132" x2="208" y2="132" stroke={s} strokeWidth="2" strokeLinecap="round" className="part-appear"/>
+        <line x1="196" y1="132" x2="206" y2="140" stroke={s} strokeWidth="2" strokeLinecap="round" className="part-appear"/>
+      </>}
+      {/* 5 — Perna e pé esquerdo */}
+      {show(5)  && <>
+        <line x1="160" y1="152" x2="124" y2="198" stroke={s} strokeWidth="3" strokeLinecap="round" className="part-appear"/>
+        <line x1="124" y1="198" x2="106" y2="205" stroke={s} strokeWidth="2.5" strokeLinecap="round" className="part-appear"/>
+      </>}
+      {/* 6 — Perna e pé direito */}
+      {show(6)  && <>
+        <line x1="160" y1="152" x2="196" y2="198" stroke={s} strokeWidth="3" strokeLinecap="round" className="part-appear"/>
+        <line x1="196" y1="198" x2="214" y2="205" stroke={s} strokeWidth="2.5" strokeLinecap="round" className="part-appear"/>
+      </>}
 
       {/* 7 — Cabelo */}
       {show(7)  && <>
@@ -104,43 +132,25 @@ function HangmanDrawing({ errors, small = false }: { errors: number; small?: boo
         <line x1="168" y1="46" x2="172" y2="36" stroke={s} strokeWidth="2" strokeLinecap="round" className="part-appear"/>
       </>}
 
-      {/* 8 — Orelha esquerda */}
-      {show(8)  && <ellipse cx="139" cy="64" rx="5" ry="7" stroke={s} strokeWidth="2" fill="none" className="part-appear"/>}
-      {/* 9 — Olho esquerdo */}
-      {show(9)  && <circle cx="153" cy="62" r="3" fill={s} className="part-appear"/>}
-      {/* 10 — Orelha direita */}
-      {show(10) && <ellipse cx="181" cy="64" rx="5" ry="7" stroke={s} strokeWidth="2" fill="none" className="part-appear"/>}
-      {/* 11 — Olho direito */}
-      {show(11) && <circle cx="167" cy="62" r="3" fill={s} className="part-appear"/>}
-
-      {/* 12 — Sobrancelha esquerda */}
-      {show(12) && <path d="M148,56 Q153,52 158,56" stroke={s} strokeWidth="2" fill="none" strokeLinecap="round" className="part-appear"/>}
-      {/* 13 — Sobrancelha direita */}
-      {show(13) && <path d="M162,56 Q167,52 172,56" stroke={s} strokeWidth="2" fill="none" strokeLinecap="round" className="part-appear"/>}
-
-      {/* 14 — Nariz */}
-      {show(14) && <path d="M156,70 L160,63 L164,70 M156,70 Q160,72 164,70" stroke={s} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" className="part-appear"/>}
-      {/* 15 — Boca */}
-      {show(15) && <path d="M153,75 Q160,81 167,75" stroke={s} strokeWidth="2" fill="none" strokeLinecap="round" className="part-appear"/>}
-
-      {/* 16 — Mão esquerda */}
-      {show(16) && <>
-        <line x1="124" y1="132" x2="114" y2="124" stroke={s} strokeWidth="2" strokeLinecap="round" className="part-appear"/>
-        <line x1="124" y1="132" x2="112" y2="132" stroke={s} strokeWidth="2" strokeLinecap="round" className="part-appear"/>
-        <line x1="124" y1="132" x2="114" y2="140" stroke={s} strokeWidth="2" strokeLinecap="round" className="part-appear"/>
+      {/* 8 — Sobrancelhas */}
+      {show(8) && <>
+        <path d="M148,56 Q153,52 158,56" stroke={s} strokeWidth="2" fill="none" strokeLinecap="round" className="part-appear"/>
+        <path d="M162,56 Q167,52 172,56" stroke={s} strokeWidth="2" fill="none" strokeLinecap="round" className="part-appear"/>
       </>}
-
-      {/* 17 — Mão direita */}
-      {show(17) && <>
-        <line x1="196" y1="132" x2="206" y2="124" stroke={s} strokeWidth="2" strokeLinecap="round" className="part-appear"/>
-        <line x1="196" y1="132" x2="208" y2="132" stroke={s} strokeWidth="2" strokeLinecap="round" className="part-appear"/>
-        <line x1="196" y1="132" x2="206" y2="140" stroke={s} strokeWidth="2" strokeLinecap="round" className="part-appear"/>
+      {/* 9 — Olhos */}
+      {show(9) && <>
+        <path d="M149,58 L157,66 M157,58 L149,66" stroke={s} strokeWidth="2" strokeLinecap="round" className="part-appear"/>
+        <path d="M163,58 L171,66 M171,58 L163,66" stroke={s} strokeWidth="2" strokeLinecap="round" className="part-appear"/>
       </>}
-
-      {/* 18 — Pé esquerdo */}
-      {show(18) && <line x1="124" y1="198" x2="106" y2="205" stroke={s} strokeWidth="2.5" strokeLinecap="round" className="part-appear"/>}
-      {/* 19 — Pé direito */}
-      {show(19) && <line x1="196" y1="198" x2="214" y2="205" stroke={s} strokeWidth="2.5" strokeLinecap="round" className="part-appear"/>}
+      {/* 10 — Orelhas */}
+      {show(10) && <>
+        <ellipse cx="139" cy="64" rx="5" ry="7" stroke={s} strokeWidth="2" fill="none" className="part-appear"/>
+        <ellipse cx="181" cy="64" rx="5" ry="7" stroke={s} strokeWidth="2" fill="none" className="part-appear"/>
+      </>}
+      {/* 11 — Nariz */}
+      {show(11) && <path d="M156,70 L160,63 L164,70 M156,70 Q160,72 164,70" stroke={s} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" className="part-appear"/>}
+      {/* 12 — Boca */}
+      {show(12) && <path d="M153,80 Q160,72 167,80" stroke={s} strokeWidth="2" fill="none" strokeLinecap="round" className="part-appear"/>}
     </svg>
   )
 }
@@ -373,7 +383,8 @@ function Game({
   const [shakeTrigger, setShakeTrigger]     = useState(0)
   const [showSettings, setShowSettings]     = useState(false)
 
-  const wrongCount = [...guessedLetters].filter(l => !secretWord.includes(l)).length
+  const wordGuessKeys = getWordGuessKeys(secretWord)
+  const wrongCount = [...guessedLetters].filter(l => !wordGuessKeys.has(l)).length
 
   // If maxErrors is reduced mid-game and current wrongs exceed new limit → lose
   useEffect(() => {
@@ -385,8 +396,8 @@ function Game({
 
   const handleGuess = useCallback((raw: string) => {
     if (gameStatus !== 'playing') return
-    const letter = raw.toUpperCase()
-    if (!/^[A-Z]$/.test(letter)) return
+    const letter = getGuessKey(raw)
+    if (!/^[A-ZÇ]$/.test(letter)) return
     if (guessedLetters.has(letter)) {
       setStatusMessage(`A letra "${letter}" já foi utilizada.`)
       setShakeTrigger(n => n + 1)
@@ -394,15 +405,16 @@ function Game({
     }
     const next = new Set([...guessedLetters, letter])
     setGuessedLetters(next)
-    if (secretWord.includes(letter)) {
-      if (secretWord.split('').every(l => next.has(l))) {
+    const guessKeys = getWordGuessKeys(secretWord)
+    if (guessKeys.has(letter)) {
+      if ([...guessKeys].every(key => next.has(key))) {
         setGameStatus('won')
         setStatusMessage('Parabéns! Você descobriu a palavra!')
       } else {
         setStatusMessage(`Boa! "${letter}" está na palavra.`)
       }
     } else {
-      const newWrong = [...next].filter(l => !secretWord.includes(l)).length
+      const newWrong = [...next].filter(l => !guessKeys.has(l)).length
       if (newWrong >= maxErrors) {
         setGameStatus('lost')
         setStatusMessage(`Você perdeu. A palavra era "${secretWord}".`)
@@ -438,10 +450,11 @@ function Game({
     el.classList.add('shake')
   }, [shakeTrigger])
 
-  const len      = secretWord.length
-  const slotSize = len >= 13 ? 'w-6 text-base' : len >= 10 ? 'w-7 text-lg' : 'w-8 text-2xl'
-  const barW     = len >= 13 ? 'w-6' : len >= 10 ? 'w-7' : 'w-8'
-  const gapX     = len >= 13 ? 'gap-x-1' : 'gap-x-2'
+  const displayLength = secretWord.length
+  const letterCount = [...secretWord].filter(isGuessableCharacter).length
+  const slotSize = displayLength >= 13 ? 'w-6 text-base' : displayLength >= 10 ? 'w-7 text-lg' : 'w-8 text-2xl'
+  const barW     = displayLength >= 13 ? 'w-6' : displayLength >= 10 ? 'w-7' : 'w-8'
+  const gapX     = displayLength >= 13 ? 'gap-x-1' : 'gap-x-2'
 
   return (
     <div className="min-h-screen bg-[#dedbd6] text-[#3b2d24] flex flex-col items-center justify-start pt-8 pb-12 px-4">
@@ -515,17 +528,22 @@ function Game({
           {/* Word display */}
           <div className={`flex flex-wrap justify-center ${gapX} gap-y-4`}>
             {secretWord.split('').map((letter, i) => {
-              const guessed = guessedLetters.has(letter)
-              const visible = guessed || gameStatus !== 'playing'
+              const guessable = isGuessableCharacter(letter)
+              const guessed = guessable && guessedLetters.has(getGuessKey(letter))
+              const visible = !guessable || guessed || gameStatus !== 'playing'
               return (
                 <div key={i} className="flex flex-col items-center gap-1.5">
                   <span className={`font-mono font-bold text-center select-none transition-colors duration-200 ${slotSize} ${
-                    visible ? (guessed ? 'text-[#3b2d24]' : 'text-[#c0392b]') : 'text-transparent'
+                    !guessable ? 'text-[#3b2d24]'
+                    : visible ? (guessed ? 'text-[#3b2d24]' : 'text-[#c0392b]')
+                    : 'text-transparent'
                   }`}>
                     {letter}
                   </span>
                   <div className={`h-0.5 ${barW} rounded-full transition-colors duration-300 ${
-                    visible ? (guessed ? 'bg-[#5a9e6f]' : 'bg-[#c0392b]') : 'bg-[#8f7766]'
+                    !guessable ? 'bg-transparent'
+                    : visible ? (guessed ? 'bg-[#5a9e6f]' : 'bg-[#c0392b]')
+                    : 'bg-[#8f7766]'
                   }`} />
                 </div>
               )
@@ -533,7 +551,7 @@ function Game({
           </div>
 
           <p className="font-mono text-[#705b4d] text-[10px] uppercase tracking-widest">
-            {len} letra{len !== 1 ? 's' : ''}
+            {letterCount} letra{letterCount !== 1 ? 's' : ''}
           </p>
 
           {/* Used letters */}
@@ -544,7 +562,7 @@ function Game({
               </p>
               <div className="flex flex-wrap justify-center gap-1.5">
                 {[...guessedLetters].sort().map(letter => {
-                  const correct = secretWord.includes(letter)
+                  const correct = wordGuessKeys.has(letter)
                   return (
                     <span key={letter} className={`inline-flex items-center justify-center w-8 h-8 rounded font-mono text-sm font-bold border ${
                       correct
@@ -566,8 +584,8 @@ function Game({
                 <div key={ri} className="flex gap-1.5">
                   {row.map(letter => {
                     const used    = guessedLetters.has(letter)
-                    const correct = used && secretWord.includes(letter)
-                    const wrong   = used && !secretWord.includes(letter)
+                    const correct = used && wordGuessKeys.has(letter)
+                    const wrong   = used && !wordGuessKeys.has(letter)
                     return (
                       <button
                         key={letter}
